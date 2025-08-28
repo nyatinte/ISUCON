@@ -1,0 +1,37 @@
+#!/bin/bash
+# ISUCON ベンチマーク実行コマンド
+
+set -eu
+
+BENCH_DIR="${BENCH_DIR:-/home/isucon/bench}"
+TARGET_HOST="${TARGET_HOST:-localhost}"
+TARGET_PORT="${TARGET_PORT:-443}"
+RESULT_DIR="${RESULT_DIR:-./bench-results}"
+
+mkdir -p "$RESULT_DIR"
+
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+RESULT_FILE="$RESULT_DIR/bench_$TIMESTAMP.json"
+
+echo "=== ISUCON Benchmark Starting ==="
+echo "Target: https://$TARGET_HOST:$TARGET_PORT"
+echo "Result: $RESULT_FILE"
+echo ""
+
+if [ -f "$BENCH_DIR/bench" ]; then
+    cd "$BENCH_DIR"
+    ./bench -target "https://$TARGET_HOST:$TARGET_PORT" -output "$RESULT_FILE" "$@"
+    
+    echo ""
+    echo "=== Benchmark Completed ==="
+    
+    if [ -f "$RESULT_FILE" ]; then
+        echo "Score: $(jq -r '.score' "$RESULT_FILE" 2>/dev/null || echo "N/A")"
+        echo "Success: $(jq -r '.success' "$RESULT_FILE" 2>/dev/null || echo "N/A")"
+        echo "Fail: $(jq -r '.fail' "$RESULT_FILE" 2>/dev/null || echo "N/A")"
+    fi
+else
+    echo "Error: Benchmark binary not found at $BENCH_DIR/bench"
+    echo "Please set BENCH_DIR environment variable to the correct path"
+    exit 1
+fi
